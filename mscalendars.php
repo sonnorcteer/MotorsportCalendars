@@ -120,73 +120,89 @@
 	
 <?php
 
-$pdo = new PDO('mysql:host=;dbname=', '', '');
+$pdo = new PDO('mysql:host=db663589648.db.1and1.com;dbname=db663589648', 'dbo663589648', 'VKfwNdpKDBIxIFFZRSpP');
 
 if (!$pdo) {
 		die('Could not connect: ');
 	}
 	//echo 'Connected successfully';
-    
-if (isset($_POST["series"])) {
-	
-	
-	$randStr = chr( mt_rand( ord( 'a' ) ,ord( 'z' ) ) ) .substr( md5( time( ) ) ,23 );
-	$filename = "calendar/".$randStr.".ics";
-	$myfile = fopen($filename, "w");
-	
-	if ($_POST["session"] == 'Practice'){
-		$sessionList = array('Practice','Qualifying','Race');}
-	elseif ($_POST["session"] == 'Qualifying'){
-		$sessionList = array('Qualifying','Race');}
-	elseif ($_POST["session"] == 'Race'){
-		$sessionList = array('Race');}
-	elseif ($_POST["session"] == 'Event'){
-		$sessionList = array('Event');}
-	
-	$output = "BEGIN:VCALENDAR\r\nMETHOD:PUBLISH\r\nVERSION:2.0\r\nPRODID:-//Sonnorcteer//MSCalendar//EN\r\nX-WR-CALNAME:MSCalendar\r\nX-WR-CALDESC:MSCalendar\r\nX-WR-TIMEZONE:Etc/GMT\r\n";
-
-	foreach ($_POST["series"] as $serie){
-		foreach ($sessionList as $sessio){
-			$query = 'SELECT * FROM event_setup WHERE series = ? AND session = ?';
-			$mysql = $pdo->prepare($query);
-			$mysql->execute(array($serie,$sessio));
-			$result = $mysql->fetchAll();
+ 
+if (isset($_POST["submit"])) { 
+	if (isset($_POST["series"])) {
 			
-			foreach ($result as $resul){
-				$output .=
-				"BEGIN:VEVENT"."\r\n".
-				"SUMMARY:".$resul['summary']."\r\n".
-				"DESCRIPTION:".$resul['description']."\r\n".
-				"LOCATION:".$resul['location']."\r\n".
-				"UID:".$resul['UID']."\r\n";
-				if (strpos($resul['summary'],'Event') !== false){
-				$output .= "DTSTART;VALUE=DATE:".substr($resul['debut'],0,8)."\r\n"
-				."DTEND;VALUE=DATE:".substr($resul['fin'],0,8)."\r\n";}
-				else{
-				$output .= "DTSTART:".$resul['debut']."\r\n"."DTEND:".$resul['fin']."\r\n";}
-				$output .= "DTSTAMP:".date('Ymd\THis\Z')."\r\n".
-				"END:VEVENT\r\n";
-				//STATUS:" . strtoupper($appointment->status) . "
-				//LAST-MODIFIED:" . date(DATE_ICAL, strtotime($appointment->last_update)) . "
-				//echo nl2br($resul['summary']."\n");
-			}
-		}
-	}
-	
-	$output .= "END:VCALENDAR";
-	
-	fwrite($myfile, $output);
-	fclose($myfile);
-	
-	$weblink = "webcal://sonnorcteer.com/".$filename;
-	$googlink = "https://www.google.com/calendar/render?cid=".rawurlencode("http://sonnorcteer.com/".$filename);
-	$downlink = "http://sonnorcteer.com/".$filename;
-	
-	$queryStore = 'INSERT INTO calendar_ids (calendar_ids, series, session) VALUES (?,?,?)';
-	$mysqlStore = $pdo->prepare($queryStore);
-	$mysqlStore->execute(array($randStr,join(',',$_POST["series"]),$_POST["session"]));
-}
+		$querySave = 'SELECT * FROM calendar_ids WHERE series = ? AND session = ?';
+		$mysqlSave = $pdo->prepare($querySave);
+		$mysqlSave->execute(array(implode(",",$_POST["series"]),$_POST["session"]));
+		$resultSave = $mysqlSave->fetchAll();
+		
+		if (empty($resultSave)){
+		
+			$randStr = chr( mt_rand( ord( 'a' ) ,ord( 'z' ) ) ) .substr( md5( time( ) ) ,23 );
+			$filename = "calendar/".$randStr.".ics";
+			$myfile = fopen($filename, "w");
+			
+			if ($_POST["session"] == 'Practice'){
+				$sessionList = array('Practice','Qualifying','Race');}
+			elseif ($_POST["session"] == 'Qualifying'){
+				$sessionList = array('Qualifying','Race');}
+			elseif ($_POST["session"] == 'Race'){
+				$sessionList = array('Race');}
+			elseif ($_POST["session"] == 'Event'){
+				$sessionList = array('Event');}
+					
+			
+			$output = "BEGIN:VCALENDAR\r\nMETHOD:PUBLISH\r\nVERSION:2.0\r\nPRODID:-//Connor Steer//MSCalendar//EN\r\nX-WR-CALNAME:MSCalendar\r\nX-WR-CALDESC:MSCalendar\r\nX-WR-TIMEZONE:Etc/GMT\r\n";
 
+			foreach ($_POST["series"] as $serie){
+				foreach ($sessionList as $sessio){
+					$query = 'SELECT * FROM event_setup WHERE series = ? AND session = ?';
+					$mysql = $pdo->prepare($query);
+					$mysql->execute(array($serie,$sessio));
+					$result = $mysql->fetchAll();
+					
+					foreach ($result as $resul){
+						$output .=
+						"BEGIN:VEVENT"."\r\n".
+						"SUMMARY:".$resul['summary']."\r\n".
+						"DESCRIPTION:".$resul['description']."\r\n".
+						"LOCATION:".$resul['location']."\r\n".
+						"UID:".$resul['UID']."\r\n";
+						if (strpos($resul['summary'],'Event') !== false){
+						$output .= "DTSTART;VALUE=DATE:".substr($resul['debut'],0,8)."\r\n"
+						."DTEND;VALUE=DATE:".substr($resul['fin'],0,8)."\r\n";}
+						else{
+						$output .= "DTSTART:".$resul['debut']."\r\n"."DTEND:".$resul['fin']."\r\n";}
+						$output .= "DTSTAMP:".date('Ymd\THis\Z')."\r\n".
+						"END:VEVENT\r\n";
+						//STATUS:" . strtoupper($appointment->status) . "
+						//LAST-MODIFIED:" . date(DATE_ICAL, strtotime($appointment->last_update)) . "
+						//echo nl2br($resul['summary']."\n");
+					}
+				}
+			}
+			
+			$output .= "END:VCALENDAR";
+			
+			fwrite($myfile, $output);
+			fclose($myfile);	
+				
+			$queryStore = 'INSERT INTO calendar_ids (calendar_ids, series, session) VALUES (?,?,?)';
+			$mysqlStore = $pdo->prepare($queryStore);
+			$mysqlStore->execute(array($randStr,join(',',$_POST["series"]),$_POST["session"]));
+		
+		}
+		
+		else {
+			$filename = "calendar/".$resultSave[0][0].".ics";
+		}
+		
+		$weblink = "webcal://sonnorcteer.com/".$filename;
+		$googlink = "https://www.google.com/calendar/render?cid=".rawurlencode("http://sonnorcteer.com/".$filename);
+		$downlink = "http://sonnorcteer.com/".$filename;
+
+	}
+}
+	
 $queryAll = 'SELECT DISTINCT series FROM event_setup ORDER BY series';
 $mysqlAll = $pdo->prepare($queryAll);
 $mysqlAll->execute();
@@ -300,7 +316,7 @@ $resultAll = $mysqlAll->fetchAll();
 <table border="0" cellpadding="5" cellspacing="1" width="95%" align="center" id="tablebot">
 <tr>
 <td align='left'>Developed by Sonnorcteer</td>
-<td align='right'>Any issues? Head to <a href="http://www.reddit.com/r/MotorsportsCalendar">reddit</a> or email me at NO</a></td>
+<td align='right'>Any issues? Head to <a href="http://www.reddit.com/r/MotorsportsCalendar">reddit</a> or email me at <a href="mailto:sonnor93@gmail.com">sonnor93@gmail.com</a></td>
 </tr>
 </div>
 	
